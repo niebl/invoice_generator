@@ -1,0 +1,58 @@
+% German service invoice starter — latex-rechnung (GPL-2.0) workflow.
+% The data and document are original; invoice.sty is supplied by TeX Live.
+\documentclass[a4paper,11pt]{scrlttr2}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage{lmodern}
+\usepackage[margin=2cm]{geometry}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[german]{invoice}
+
+\input{invoice-data}
+\renewcommand{\familydefault}{\sfdefault}
+\setkomavar{fromname}{\senderName}
+\setkomavar{fromaddress}{\senderStreet\\\senderZIP\ \senderCity}
+\setkomavar{place}{\senderCity}
+\setkomavar{date}{\invoiceDate}
+\setkomavar{fromphone}{\senderPhone}
+\setkomavar{fromemail}{\href{mailto:\senderEmail}{\senderEmail}}
+\setkomavar{subject}{Rechnung \invoiceReference}
+\setkomavar{signature}{\senderName}
+\setkomavar{location}{\raggedleft\small
+  Rechnungsnummer: \invoiceReference\\
+  Fällig am: \payDate\\
+  Steuernummer: \taxID}
+\setkomavar{firsthead}{\hfill\parbox[t]{7cm}{\raggedleft
+  \textbf{\senderName}\\[-2pt]
+  \senderStreet\\\senderZIP\ \senderCity\\[-2pt]
+  \senderPhone\\\senderEmail\\\senderWeb}}
+\setkomavar{firstfoot}{}
+
+\begin{document}
+\begin{letter}{\customerCompany\\\customerName\\
+  \customerStreet\\\customerZIP\ \customerCity}
+\opening{\invoiceSalutation}
+
+Für die im Leistungszeitraum erbrachten Arbeiten erhalten Sie hiermit die
+folgende Rechnung. Bitte geben Sie bei der Zahlung die Rechnungsnummer an.
+
+\begin{invoice}{Euro}{0}
+  \ProjectTitle{Datenberatung und Dokumentation}
+  \Fee{Analyse des Bestandsprozesses}{95.00}{3}
+  \Fee{Workshop und Ergebnisprotokoll}{95.00}{2}
+  \EBC{Dokumentation und Übergabe}{180.00}
+  \Discount{Frühzahlerrabatt}{25.00}
+\end{invoice}
+
+Die Rechnung enthält gemäß § 19 UStG keine Umsatzsteuer. Zahlungsziel ist
+der oben genannte Fälligkeitstermin.
+
+\smallskip
+\textit{Zahlung an:} \accountBankName\quad
+IBAN \accountIBAN\quad BIC \accountBIC.
+
+\closing{Mit freundlichen Grüßen}
+\end{letter}
+\end{document}
