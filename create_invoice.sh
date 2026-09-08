@@ -124,7 +124,7 @@ CLOSING_EN="Best,"
 
 
 # REPLACE VALUES
-TEMPLATE=$(cat invoice/invoice-template.tex)
+TEMPLATE=$(cat latex/invoice-template.tex)
 DATA=${TEMPLATE/"%date"/$CREATIONDATE}
 DATA=${DATA/"%duedate"/$DUEDATE}
 DATA=${DATA/"%number"/$INVOICENR}
@@ -148,9 +148,9 @@ DATA=${DATA/"%closing"/"$CLOSING"}
 DATA=${DATA/"%body"/"$BODY"}
 DATA=${DATA/"%ustg"/"$USTG"}
 
-echo "$DATA" > invoice/invoice-data.tex
+echo "$DATA" > latex/invoice-data.tex
 
-cd invoice
+cd latex
 pdflatex main.tex
 cp main.pdf "../invoice_$LANGSHORT_$INVOICENR.pdf"
 cd ..
