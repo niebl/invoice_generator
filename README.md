@@ -1,7 +1,7 @@
 # LaTeX invoice generator
 personal project to allow me to create invoices on the fly
 
-[original invoice template]{https://www.latextemplates.com/template/latex-rechnung-starter/} © Daniel Koppenhagen
+[original invoice template](https://www.latextemplates.com/template/latex-rechnung-starter/) © Daniel Koppenhagen
 
 requires pdflatex and german language packages to be installed
 
