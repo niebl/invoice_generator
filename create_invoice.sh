@@ -87,10 +87,10 @@ done
 interactiveMode() {
   # set default variables
   if [[ -z ${INVOICELANGUAGE+x} ]]; then
-    read -p "select invoice langauge [de / en]:
+    read -p "select invoice language [de / en]:
                           ^       " user_lang
     if [[ "x$user_clientname" == x || "$user_lang" == "de" || "$user_lang" == "en" ]]; then
-      LANGSHORT=$user_lang
+      LANGSHORT=${user_lang:-"de"}
       INVOICELANGUAGE=$( [[ "$LANGSHORT" == "de" ]] && echo "german" || echo "english" )
     else
       echo "invalid input"
@@ -152,6 +152,7 @@ echo "FOR ${CLIENTNAME}"
 echo "INVOICE DATE: ${CREATIONDATE}"
 echo "DUE DATE: ${DUEDATE}"
 echo "SERVICE: $PRODUCT: $PRICE"
+echo ""
 
 # load invoice text templates
 source templates/invoice_text.sh
@@ -182,7 +183,7 @@ echo "$DATA" > templates/invoice-data.tex
 # generate and display pdf
 
 cd templates
-pdflatex main.tex
+pdflatex --interaction=batchmode main.tex
 cp main.pdf "../invoice_$LANGSHORT_$INVOICENR.pdf"
 cd ..
 okular "invoice_$LANGSHORT_$INVOICENR.pdf"
