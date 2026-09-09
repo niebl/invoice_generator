@@ -1,3 +1,7 @@
+*.pdf
+invoice-data.tex
+
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof

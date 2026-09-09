@@ -84,31 +84,68 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+interactiveMode() {
+  # set default variables
+  if [[ -z ${INVOICELANGUAGE+x} ]]; then
+    read -p "select invoice langauge [de / en]:
+                          ^       " user_lang
+    if [[ "x$user_clientname" == x || "$user_lang" == "de" || "$user_lang" == "en" ]]; then
+      LANGSHORT=$user_lang
+      INVOICELANGUAGE=$( [[ "$LANGSHORT" == "de" ]] && echo "german" || echo "english" )
+    else
+      echo "invalid input"
+      exit 2
+    fi
+  fi
+  if [[ -z ${INVOICENR+x} ]]; then
+    read -p "enter the invoice-nr (required): 
+    " user_invoicenr
+    if [ "x$user_invoicenr" = x ]; then
+      echo "invalid input"
+      exit 2
+    fi
+    INVOICENR=$user_invoicenr
+  fi
+  if [[ -z ${CLIENTNAME+x} ]]; then
+    read -p "enter the name of your client (required): 
+    " user_clientname
+    if [ "x$user_clientname" = x ]; then
+      echo "invalid input"
+      exit 2
+    fi
+    CLIENTNAME=$user_clientname
+  fi
+  if [[ -z ${CLIENTSTREET+x} ]]; then
+    read -p "enter the street-name of your client (blank if empty): 
+    " user_cstreet
+    CLIENTSTREET=${user_cstreet:-"\leavevmode"}
+  fi
+  if [[ -z ${CLIENTZIP+x} ]]; then
+    read -p "enter the zip code of your client (blank if empty): 
+    " user_czip
+    CLIENTZIP=${user_czip:-"\leavevmode"}
+  fi
+  if [[ -z ${CLIENTCITY+x} ]]; then
+    read -p "enter the city-name of your client (blank if empty): 
+    " user_ccity
+    CLIENTCITY=${user_ccity:-"\leavevmode"}
+  fi
+  if [[ -z ${CREATIONDATE+x} ]]; then
+    local TODAY=$(date --iso-8601)
+    read -p "enter a date [$TODAY]: 
+    " user_date
+    CREATIONDATE=${user_date:-$TODAY}
+  fi
+  if [[ -z ${DUEDATE+x} ]]; then
+    read -p "enter a due-date [$CREATIONDATE]: 
+    " user_duedate
+    DUEDATE=${user_date:-$CREATIONDATE}
+  fi
+}
+
 set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
-# set default variables
-if [[ -z ${CREATIONDATE+x} ]]; then
-    CREATIONDATE=$(date --iso-8601)
-fi
-if [[ -z ${DUEDATE+x} ]]; then
-    DUEDATE=$CREATIONDATE
-fi
-if [[ -z ${INVOICELANGUAGE+x} ]]; then
-    INVOICELANGUAGE="german"
-    LANGSHORT="de"
-fi
-if [[ "$INVOICELANGUAGE" == "english" ]]; then
-  LANGSHORT="en"
-fi
-if [[ -z ${CLIENTSTREET+x} ]]; then
-    CLIENTSTREET="\leavevmode"
-fi
-if [[ -z ${CLIENTZIP+x} ]]; then
-    CLIENTZIP="\leavevmode"
-fi
-if [[ -z ${CLIENTCITY+x} ]]; then
-    CLIENTCITY="\leavevmode"
-fi
+interactiveMode
 
 echo "CREATING INVOICE ${INVOICENR}"
 echo "FOR ${CLIENTNAME}"
@@ -154,7 +191,3 @@ if [[ -n $1 ]]; then
     echo "Last line of file specified as non-opt/last argument:"
     tail -1 "$1"
 fi
-
-interactiveMode() {
-  
-}
