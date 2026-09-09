@@ -1,5 +1,22 @@
 #!/bin/bash
 
+##  Command line tool to generate invoices from templates. 
+##  Copyright (C) 2026  niebl
+##
+##  This program is free software; you can redistribute it and/or modify
+##  it under the terms of the GNU General Public License as published by
+##  the Free Software Foundation; either version 2 of the License, or
+##  (at your option) any later version.
+##
+##  This program is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##  GNU General Public License for more details.
+##
+##  You should have received a copy of the GNU General Public License along
+##  with this program; if not, write to the Free Software Foundation, Inc.,
+##  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 # get arguments from user
 POSITIONAL_ARGS=()
 
@@ -80,6 +97,9 @@ if [[ -z ${INVOICELANGUAGE+x} ]]; then
     INVOICELANGUAGE="german"
     LANGSHORT="de"
 fi
+if [[ "$INVOICELANGUAGE" == "english" ]]; then
+  LANGSHORT="en"
+fi
 if [[ -z ${CLIENTSTREET+x} ]]; then
     CLIENTSTREET="\leavevmode"
 fi
@@ -88,10 +108,6 @@ if [[ -z ${CLIENTZIP+x} ]]; then
 fi
 if [[ -z ${CLIENTCITY+x} ]]; then
     CLIENTCITY="\leavevmode"
-fi
-
-if [[ "$INVOICELANGUAGE" == "english" ]]; then
-  LANGSHORT="en"
 fi
 
 echo "CREATING INVOICE ${INVOICENR}"
@@ -114,21 +130,19 @@ DATA=${DATA/"%customerZIP"/$CLIENTZIP}
 DATA=${DATA/"%customerCity"/$CLIENTCITY}
 DATA=${DATA/"%service"/$PRODUCT}
 DATA=${DATA/"%price"/$PRICE}
-
 DATA=${DATA/"%language"/$INVOICELANGUAGE}
-
 SALUTATION="$( [[ "$INVOICELANGUAGE" == "english" ]] && echo "$SALUTATION_EN" || echo "$SALUTATION_DE")"
 CLOSING="$( [[ "$INVOICELANGUAGE" == "english" ]] && echo "$CLOSING_EN" || echo "$CLOSING_DE")"
 BODY="$( [[ "$INVOICELANGUAGE" == "english" ]] && echo "$INVOICEBODY_EN" || echo "$INVOICEBODY_DE")"
 USTG="$( [[ "$INVOICELANGUAGE" == "english" ]] && echo "$USTGNOTE_EN" || echo "$USTGNOTE_DE")"
-
-
 DATA=${DATA/"%salutation"/"$SALUTATION"}
 DATA=${DATA/"%closing"/"$CLOSING"}
 DATA=${DATA/"%body"/"$BODY"}
 DATA=${DATA/"%ustg"/"$USTG"}
 
 echo "$DATA" > templates/invoice-data.tex
+
+# generate and display pdf
 
 cd templates
 pdflatex main.tex
@@ -140,3 +154,7 @@ if [[ -n $1 ]]; then
     echo "Last line of file specified as non-opt/last argument:"
     tail -1 "$1"
 fi
+
+interactiveMode() {
+  
+}
