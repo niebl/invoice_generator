@@ -19,6 +19,7 @@
 
 # get arguments from user
 POSITIONAL_ARGS=()
+INVOICEITEMS=()
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -62,17 +63,7 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
-    #TODO: Allow for multiple entries
-    -S|--service)
-      PRODUCT="$2"
-      shift # past argument
-      shift # past value
-      ;;
-    -p|--price)
-      PRICE="$2"
-      shift # past argument
-      shift # past value
-      ;;
+    #TODO: Allow for items specified outside of interactive mode
     -*|--*)
       echo "Unknown option $1"
       exit 1
@@ -87,8 +78,7 @@ done
 interactiveMode() {
   # set default variables
   if [[ -z ${INVOICELANGUAGE+x} ]]; then
-    read -p "select invoice language [de / en]:
-                          ^       " user_lang
+    read -p "select invoice language [DE / en]> " user_lang
     if [[ "x$user_clientname" == x || "$user_lang" == "de" || "$user_lang" == "en" ]]; then
       LANGSHORT=${user_lang:-"de"}
       INVOICELANGUAGE=$( [[ "$LANGSHORT" == "de" ]] && echo "german" || echo "english" )
@@ -98,8 +88,7 @@ interactiveMode() {
     fi
   fi
   if [[ -z ${INVOICENR+x} ]]; then
-    read -p "enter the invoice-nr (required): 
-    " user_invoicenr
+    read -p "enter the invoice-nr (required)> " user_invoicenr
     if [ "x$user_invoicenr" = x ]; then
       echo "invalid input"
       exit 2
@@ -107,8 +96,7 @@ interactiveMode() {
     INVOICENR=$user_invoicenr
   fi
   if [[ -z ${CLIENTNAME+x} ]]; then
-    read -p "enter the name of your client (required): 
-    " user_clientname
+    read -p "enter the name of your client (required)> " user_clientname
     if [ "x$user_clientname" = x ]; then
       echo "invalid input"
       exit 2
@@ -116,43 +104,77 @@ interactiveMode() {
     CLIENTNAME=$user_clientname
   fi
   if [[ -z ${CLIENTSTREET+x} ]]; then
-    read -p "enter the street-name of your client (blank if empty): 
-    " user_cstreet
+    read -p "enter the street-name of your client (blank if empty)> " user_cstreet
     CLIENTSTREET=${user_cstreet:-"\leavevmode"}
   fi
   if [[ -z ${CLIENTZIP+x} ]]; then
-    read -p "enter the zip code of your client (blank if empty): 
-    " user_czip
+    read -p "enter the zip code of your client (blank if empty)> " user_czip
     CLIENTZIP=${user_czip:-"\leavevmode"}
   fi
   if [[ -z ${CLIENTCITY+x} ]]; then
-    read -p "enter the city-name of your client (blank if empty): 
-    " user_ccity
+    read -p "enter the city-name of your client (blank if empty)> " user_ccity
     CLIENTCITY=${user_ccity:-"\leavevmode"}
   fi
   if [[ -z ${CREATIONDATE+x} ]]; then
     local TODAY=$(date --iso-8601)
-    read -p "enter a date [$TODAY]: 
-    " user_date
+    read -p "enter a date [$TODAY]> " user_date
     CREATIONDATE=${user_date:-$TODAY}
   fi
   if [[ -z ${DUEDATE+x} ]]; then
-    read -p "enter a due-date [$CREATIONDATE]: 
-    " user_duedate
-    DUEDATE=${user_date:-$CREATIONDATE}
+    read -p "enter a due-date [$CREATIONDATE]> " user_duedate
+    DUEDATE=${user_duedate:-$CREATIONDATE}
   fi
 }
 
+addInvoiceItem() {
+  # prompt the user to add an invoice item
+  # check if items list already contains items
+  if (( ${#INVOICEITEMS[@]} != 0 )); then
+    [[ "$(read -e -p 'Add another invoice item? [y/N]> '; echo $REPLY)" == [Yy]* ]] || return 1;
+  fi
+
+  # type: Fee, EBC, Discount etc.
+  # item: description of item
+  # value: numeric value of price. Euro by default.
+  # separated by ~~~
+  local item_name=$(read -p "   Enter item name [default: Illustration]> "; echo $REPLY)
+  item_name=${item_name:-"Illustration"}
+  local item_value=$(read -p "   Enter value for $item_name [default: 0.00]> "; echo $REPLY)
+  item_value=${item_value:-0}
+  if (( $(echo "$item_value == 0.0" |bc -l) )); then
+    echo -e "    \033[0;31mWARNING:\033[0m item value entered is 0. continue only if intended"
+  fi
+  local item_type=$(read -p "   Enter item type for $item_name [default: Fee]> "; echo $REPLY)
+  item_type=${item_type:-"Fee"}
+  item_type="\\$item_type"
+
+  INVOICEITEMS+=("$item_type§$item_name§$item_value")
+  addInvoiceItem
+}
+
+processInvoiceItems() {
+  # read array and create valid latex invoice-item-body
+  local body=""
+  for i in "${INVOICEITEMS[@]}"
+  do
+    local item_string=$i
+    IFS='§' read -ra item_data <<< "$item_string"
+    body="$body
+    ${item_data[0]}{${item_data[1]}}{${item_data[2]}}"
+  done
+  echo $body
+}
+
+
 set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
+addInvoiceItem
 interactiveMode
 
 echo "CREATING INVOICE ${INVOICENR}"
 echo "FOR ${CLIENTNAME}"
 echo "INVOICE DATE: ${CREATIONDATE}"
 echo "DUE DATE: ${DUEDATE}"
-echo "SERVICE: $PRODUCT: $PRICE"
-echo ""
 
 # load invoice text templates
 source templates/invoice_text.sh
@@ -166,8 +188,6 @@ DATA=${DATA/"%customerName"/$CLIENTNAME}
 DATA=${DATA/"%customerStreet"/$CLIENTSTREET}
 DATA=${DATA/"%customerZIP"/$CLIENTZIP}
 DATA=${DATA/"%customerCity"/$CLIENTCITY}
-DATA=${DATA/"%service"/$PRODUCT}
-DATA=${DATA/"%price"/$PRICE}
 DATA=${DATA/"%language"/$INVOICELANGUAGE}
 SALUTATION="$( [[ "$INVOICELANGUAGE" == "english" ]] && echo "$SALUTATION_EN" || echo "$SALUTATION_DE")"
 CLOSING="$( [[ "$INVOICELANGUAGE" == "english" ]] && echo "$CLOSING_EN" || echo "$CLOSING_DE")"
@@ -177,6 +197,8 @@ DATA=${DATA/"%salutation"/"$SALUTATION"}
 DATA=${DATA/"%closing"/"$CLOSING"}
 DATA=${DATA/"%body"/"$BODY"}
 DATA=${DATA/"%ustg"/"$USTG"}
+
+DATA=${DATA/"%itemsBody"/$(processInvoiceItems)}
 
 echo "$DATA" > templates/invoice-data.tex
 
