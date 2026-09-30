@@ -165,6 +165,45 @@ processInvoiceItems() {
   echo $body
 }
 
+getTotal() {
+  # read array and return total
+  local total=0
+  for i in "${INVOICEITEMS[@]}"
+  do
+    local item_string=$i
+    IFS='§' read -ra item_data <<< "$item_string"
+    local value="${item_data[2]}"
+    if [[ "${item_data[0]}" == "\\Discount" ]]; then
+      value=$(echo "scale=2; $value * -1" | bc -l)
+    fi
+    total=$(echo "scale=2; $total + $value" | bc -l)
+  done
+  # force double decimals
+  LC_ALL=C printf -v total_qr "%.2f" "$total"
+  echo "$total_qr"   # prints 5.00
+}
+
+createEpcQr() {
+  #
+  #get values from invoice_data. in the future there could be a more elegant way
+  local BIC=$(sed -nE 's/\\newcommand\{\\accountBIC\}\{([^}]*)\}/\1/p' templates/invoice-data.tex)
+  local IBAN=$(sed -nE 's/\\newcommand\{\\accountIBAN\}\{([^}]*)\}/\1/p' templates/invoice-data.tex)
+  local name=$(sed -nE 's/\\newcommand\{\\accountBankName\}\{([^}]*)\}/\1/p' templates/invoice-data.tex)
+  local total=$(getTotal)
+
+  #TODO. cant exceed v=13. but smaller is better
+  qrencode --level=M -o templates/qr.png "BCD
+001
+1
+INST
+${BIC}
+${name}
+${IBAN}
+EUR${total}
+
+
+${INVOICENR}"
+}
 
 set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
@@ -205,10 +244,12 @@ DATA=${DATA/"%itemsBody"/$(processInvoiceItems)}
 echo "$DATA" > templates/invoice-data.tex
 
 # generate and display pdf
+createEpcQr
 
 cd templates
 pdflatex --interaction=batchmode main.tex
 cp main.pdf "../invoice_$LANGSHORT_$INVOICENR.pdf"
+rm qr.png
 cd ..
 okular "invoice_$LANGSHORT_$INVOICENR.pdf"
 

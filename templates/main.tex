@@ -11,6 +11,7 @@
 
 \input{invoice-data}
 \usepackage[\invoiceLanguage]{invoice}
+\usepackage[pdftex]{graphicx}
 
 \renewcommand{\familydefault}{\sfdefault}
 \setkomavar{fromname}{\senderName}
@@ -37,8 +38,17 @@
 \begin{letter}{\customerName\\
 	\customerStreet\\\customerZIP\ \customerCity}
 \opening{\invoiceSalutation}
-
+\noindent\begin{minipage}{0.8\linewidth}
 \invoiceBody
+\end{minipage}
+\hfill%
+\begin{minipage}{0.20\linewidth}\raggedleft
+ \begin{figure}
+	\centering
+	\includegraphics[width=\linewidth]{qr.png}
+	
+\end{figure}
+\end{minipage}
 
 \begin{invoice}{Euro}{0}
 	\ProjectTitle{\itemsTitle}
